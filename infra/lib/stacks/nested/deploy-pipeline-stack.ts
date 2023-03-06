@@ -118,6 +118,7 @@ export class DeployPipeline extends NestedStack {
           // codebuild
           'codebuild:BatchGetBuilds',
           'codebuild:StartBuild',
+          'codebuild:StopBuild',
         ],
         resources: ['*'],
       })
