@@ -129,7 +129,7 @@ export class DeployPipeline extends NestedStack {
     ];
     const buildCommands = props.pathFilters.map(
       (path: string) =>
-        `git diff --quiet HEAD $CODEBUILD_WEBHOOK_BASE_REF -- ${path} || aws codebuild stop $CODEBUILD_BATCH_BUILD_IDENTIFIER`
+        `git diff --quiet HEAD~1 $CODEBUILD_WEBHOOK_BASE_REF -- ${path} || aws codebuild stop $CODEBUILD_BATCH_BUILD_IDENTIFIER`
     );
     buildCommands.push('your commit went through all filters!!!');
 
