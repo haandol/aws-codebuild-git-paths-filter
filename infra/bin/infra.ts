@@ -4,7 +4,11 @@ import * as cdk from 'aws-cdk-lib';
 import { ExampleStack } from '../lib/stacks/example-stack';
 import { Config } from '../lib/configs/loader';
 
-const app = new cdk.App();
+const app = new cdk.App({
+  context: {
+    ns: Config.Ns,
+  },
+});
 
 new ExampleStack(app, `${Config.Ns}ExampleStack`, {
   codeRepositoryName: Config.Codecommit.RepositoryName,

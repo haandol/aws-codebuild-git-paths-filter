@@ -51,6 +51,7 @@ export class DeployPipeline extends NestedStack {
         output: sourceOutput,
         branch: 'main',
         actionName: 'checkoutSource',
+        codeBuildCloneOutput: true,
         repository,
       })
     );
@@ -71,6 +72,7 @@ export class DeployPipeline extends NestedStack {
 
   private createBuildRole() {
     const ns = this.node.tryGetContext('ns') as string;
+
     const role = new iam.Role(this, 'BuildRole', {
       roleName: `${ns}BuildRole`,
       assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
@@ -88,6 +90,8 @@ export class DeployPipeline extends NestedStack {
           's3:CopyObject',
           's3:PutObject',
           'kms:Decrypt',
+          // codebuild
+          'codebuild:StopBuild',
         ],
         resources: ['*'],
         effect: iam.Effect.ALLOW,
@@ -104,6 +108,7 @@ export class DeployPipeline extends NestedStack {
       new iam.PolicyStatement({
         actions: [
           // codecommit
+          'codecommit:GitPull',
           'codecommit:GetBranch',
           'codecommit:GetCommit',
           'codecommit:UploadArchive',
@@ -113,7 +118,6 @@ export class DeployPipeline extends NestedStack {
           // codebuild
           'codebuild:BatchGetBuilds',
           'codebuild:StartBuild',
-          'codebuild:StopBuild',
         ],
         resources: ['*'],
       })
@@ -127,8 +131,6 @@ export class DeployPipeline extends NestedStack {
     const preBuildCommands = [
       'echo ref["$CODEBUILD_RESOLVED_SOURCE_VERSION"]',
       'echo build_id["$CODEBUILD_BUILD_ID"]',
-
-      'cd $CODEBUILD_SRC_DIR',
     ];
     const buildCommands = props.pathFilters.map(
       (path: string) =>
