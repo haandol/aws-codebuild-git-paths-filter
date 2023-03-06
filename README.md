@@ -67,6 +67,13 @@ $ cdk deploy "*" --require-approval never
 visit codepipeline AWS console and check the pipeline is running after commit something under infra folder.
 
 below text will be printed on codebuild console if your commit is well filtered.
-`your commit went through all filters!!!`
 
-or codebuild will stop.
+```bash
+your commit went through all filters!!!
+```
+
+or codebuild will stop with below error message if your commit is not well filtered.
+
+```bash
+your commit did not match any filters, stopping build...
+```
