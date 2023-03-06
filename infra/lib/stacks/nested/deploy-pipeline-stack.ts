@@ -125,12 +125,12 @@ export class DeployPipeline extends NestedStack {
     const role = this.createBuildRole();
 
     const preBuildCommands = [
-      'echo ref["$CODEBUILD_WEBHOOK_HEAD_REF"]',
-      'echo build_id["$CODEBUILD_BATCH_BUILD_IDENTIFIER"]',
+      'echo ref["$CODEBUILD_RESOLVED_SOURCE_VERSION"]',
+      'echo build_id["$CODEBUILD_BUILD_ID"]',
     ];
     const buildCommands = props.pathFilters.map(
       (path: string) =>
-        `git diff --quiet $CODEBUILD_WEBHOOK_HEAD_REF~1 $CODEBUILD_WEBHOOK_HEAD_REF -- ${path} || aws codebuild stop-build --id $CODEBUILD_BATCH_BUILD_IDENTIFIER`
+        `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || aws codebuild stop-build --id $CODEBUILD_BUILD_ID`
     );
     buildCommands.push('your commit went through all filters!!!');
 
