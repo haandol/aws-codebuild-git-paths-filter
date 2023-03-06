@@ -127,6 +127,8 @@ export class DeployPipeline extends NestedStack {
     const preBuildCommands = [
       'echo ref["$CODEBUILD_RESOLVED_SOURCE_VERSION"]',
       'echo build_id["$CODEBUILD_BUILD_ID"]',
+
+      'cd $CODEBUILD_SRC_DIR',
     ];
     const buildCommands = props.pathFilters.map(
       (path: string) =>
