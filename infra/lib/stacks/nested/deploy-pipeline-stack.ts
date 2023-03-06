@@ -130,8 +130,8 @@ export class DeployPipeline extends NestedStack {
     const role = this.createBuildRole();
 
     const preBuildCommands = [
-      'echo ref["$CODEBUILD_RESOLVED_SOURCE_VERSION"]',
-      'echo build_id["$CODEBUILD_BUILD_ID"]',
+      'echo "ref[$CODEBUILD_RESOLVED_SOURCE_VERSION]"',
+      'echo "build_id[$CODEBUILD_BUILD_ID]"',
     ];
     const buildCommands = [
       'STOP_BUILD="true"',
@@ -139,11 +139,12 @@ export class DeployPipeline extends NestedStack {
         (path: string) =>
           `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_BUILD="false"`
       ),
-      'if [ "$STOP_BUILD" = "true" ]; then',
-      'echo "your commit did not match any filters, stopping build..."',
-      'aws codebuild stop-build --id $CODEBUILD_BUILD_ID',
-      'exit 1',
-      'fi',
+      `
+        if [ "$STOP_BUILD" = "true" ]; then
+          echo "your commit did not match any filters, stopping build..."
+          aws codebuild stop-build --id $CODEBUILD_BUILD_ID
+        fi
+      `.trim(),
     ];
     const postBuildCommands = [
       'echo "your commit went through all filters!!!"',
