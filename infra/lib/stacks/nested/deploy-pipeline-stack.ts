@@ -133,11 +133,21 @@ export class DeployPipeline extends NestedStack {
       'echo ref["$CODEBUILD_RESOLVED_SOURCE_VERSION"]',
       'echo build_id["$CODEBUILD_BUILD_ID"]',
     ];
-    const buildCommands = props.pathFilters.map(
-      (path: string) =>
-        `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || aws codebuild stop-build --id $CODEBUILD_BUILD_ID`
-    );
-    buildCommands.push('your commit went through all filters!!!');
+    const buildCommands = [
+      'STOP_BUILD="true"',
+      ...props.pathFilters.map(
+        (path: string) =>
+          `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_BUILD="false"`
+      ),
+      'if [ "$STOP_BUILD" = "true" ]; then',
+      'echo "your commit did not match any filters, stopping build..."',
+      'aws codebuild stop-build --id $CODEBUILD_BUILD_ID',
+      'exit 1',
+      'fi',
+    ];
+    const postBuildCommands = [
+      'echo "your commit went through all filters!!!"',
+    ];
 
     const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
       buildSpec: codebuild.BuildSpec.fromObject({
@@ -145,6 +155,7 @@ export class DeployPipeline extends NestedStack {
         phases: {
           pre_build: { commands: preBuildCommands },
           build: { commands: buildCommands },
+          post_build: { commands: postBuildCommands },
         },
       }),
       role,
