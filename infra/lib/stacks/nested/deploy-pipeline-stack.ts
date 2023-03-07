@@ -55,17 +55,6 @@ export class DeployPipeline extends NestedStack {
 
     // build stage
     const project = this.newBuildProject(props);
-    project.role!.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: [
-          'codepipeline:StopPipelineExecution',
-          'codepipeline:GetPipelineState',
-        ],
-        resources: [pipeline.pipelineArn],
-        effect: iam.Effect.ALLOW,
-      })
-    );
-
     const buildOutput = codepipeline.Artifact.artifact('build');
     const buildStage = pipeline.addStage({ stageName: 'Build' });
     buildStage.addAction(
@@ -79,6 +68,8 @@ export class DeployPipeline extends NestedStack {
   }
 
   private createBuildRole() {
+    const ns = this.node.tryGetContext('ns') as string;
+
     const role = new iam.Role(this, 'BuildRole', {
       assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
     });
@@ -95,6 +86,8 @@ export class DeployPipeline extends NestedStack {
           's3:CopyObject',
           's3:PutObject',
           'kms:Decrypt',
+          // codebuild
+          'codebuild:StopBuild',
         ],
         resources: ['*'],
         effect: iam.Effect.ALLOW,
@@ -137,12 +130,17 @@ export class DeployPipeline extends NestedStack {
       'echo "build_id[$CODEBUILD_BUILD_ID]"',
     ];
     const buildCommands = [
-      'STOP_PIPELINE=true',
+      'STOP_BUILD="true"',
       ...props.pathFilters.map(
         (path: string) =>
-          `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_PIPELINE="false"`
+          `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_BUILD="false"`
       ),
-      'if [ "$STOP_PIPELINE" = "true" ]; then ./scripts/stop-pipeline.sh; fi',
+      `
+        if [ "$STOP_BUILD" = "true" ]; then
+          echo "your commit did not match any filters, stopping build..."
+          aws codebuild stop-build --id $CODEBUILD_BUILD_ID
+        fi
+      `.trim(),
     ];
     const postBuildCommands = [
       'echo "your commit went through all filters!!!"',
