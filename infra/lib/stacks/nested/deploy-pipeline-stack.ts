@@ -55,6 +55,17 @@ export class DeployPipeline extends NestedStack {
 
     // build stage
     const project = this.newBuildProject(props);
+    project.role!.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'codepipeline:StopPipelineExecution',
+          'codepipeline:GetPipelineState',
+        ],
+        resources: [pipeline.pipelineArn],
+        effect: iam.Effect.ALLOW,
+      })
+    );
+
     const buildOutput = codepipeline.Artifact.artifact('build');
     const buildStage = pipeline.addStage({ stageName: 'Build' });
     buildStage.addAction(
@@ -84,9 +95,6 @@ export class DeployPipeline extends NestedStack {
           's3:CopyObject',
           's3:PutObject',
           'kms:Decrypt',
-          // Codepipeline
-          'codepipeline:StopPipelineExecution',
-          'codepipeline:GetPipelineState',
         ],
         resources: ['*'],
         effect: iam.Effect.ALLOW,
@@ -113,21 +121,11 @@ export class DeployPipeline extends NestedStack {
           // codebuild
           'codebuild:BatchGetBuilds',
           'codebuild:StartBuild',
+          'codebuild:StopBuild',
         ],
         resources: ['*'],
       })
     );
-    // stop pipeline execution, you can stop codebuild job instead but it will show as failed in pipeline perspective
-    role.addToPrincipalPolicy(
-      new iam.PolicyStatement({
-        actions: [
-          'codepipeline:StopPipelineExecution',
-          'codepipeline:GetPipelineState',
-        ],
-        resources: ['*'],
-      })
-    );
-
     return role;
   }
 
@@ -137,7 +135,6 @@ export class DeployPipeline extends NestedStack {
     const preBuildCommands = [
       'echo "ref[$CODEBUILD_RESOLVED_SOURCE_VERSION]"',
       'echo "build_id[$CODEBUILD_BUILD_ID]"',
-      'echo "pipeline_name[$PIPELINE_NAME]"',
     ];
     const buildCommands = [
       'STOP_PIPELINE=true',
