@@ -6,8 +6,6 @@ Deploying this cdk will provision below architeture on you AWS Account.
 
 ![](/imgs/architecture.png)
 
-**Running this repository may cost you to provision AWS resources**
-
 # Prerequisites
 
 - awscli
