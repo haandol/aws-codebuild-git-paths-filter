@@ -136,20 +136,12 @@ export class DeployPipeline extends NestedStack {
       'echo "build_id[$CODEBUILD_BUILD_ID]"',
     ];
     const buildCommands = [
-      'STOP_PIPELINE="true"',
+      'STOP_PIPELINE=true',
       ...props.pathFilters.map(
         (path: string) =>
           `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_PIPELINE="false"`
       ),
-      `
-        if [ "$STOP_PIPELINE" = "true" ]; then
-          echo "your commit did not match any filters, stopping build..."
-          PIPELINE_NAME=$CODEBUILD_INITIATOR#codepipeline/
-          PIPELINE_EXECUTION_ID=$(aws codepipeline get-pipeline-state --name $PIPELINE_NAME --query 'stageStates[?actionStates[?latestExecution.externalExecutionId==$CODEBUILD_BUILD_ID]].latestExecution.pipelineExecutionId' --output text)
-          echo "stopping pipeline execution $PIPELINE_EXECUTION_ID on pipeline $PIPELINE_NAME"
-          aws codepipeline stop-pipeline-execution --pipeline-name $PIPELINE_NAME --pipeline-execution-id $PIPELINE_EXECUTION_ID
-        fi
-      `.trim(),
+      'if [ "$STOP_PIPELINE" = "true" ]; then ./stop-pipeline.sh fi',
     ];
     const postBuildCommands = [
       'echo "your commit went through all filters!!!"',
