@@ -16,8 +16,6 @@ export class DeployPipeline extends NestedStack {
   constructor(scope: Construct, id: string, props: IProps) {
     super(scope, id);
 
-    const ns = this.node.tryGetContext('ns') as string;
-
     const artifactBucket = new s3.Bucket(this, 'ArtifactBucket', {
       autoDeleteObjects: true,
       enforceSSL: true,
@@ -34,7 +32,6 @@ export class DeployPipeline extends NestedStack {
       role,
       artifactBucket,
       restartExecutionOnUpdate: false,
-      pipelineName: ns,
       crossAccountKeys: false,
     });
 
@@ -71,10 +68,7 @@ export class DeployPipeline extends NestedStack {
   }
 
   private createBuildRole() {
-    const ns = this.node.tryGetContext('ns') as string;
-
     const role = new iam.Role(this, 'BuildRole', {
-      roleName: `${ns}BuildRole`,
       assumedBy: new iam.ServicePrincipal('codebuild.amazonaws.com'),
     });
     role.addToPrincipalPolicy(

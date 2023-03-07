@@ -31,7 +31,7 @@ if (error) {
 }
 
 export const Config: IConfig = {
-  Ns: `${envVars.NS}${envVars.STAGE}`,
+  Ns: envVars.NS,
   Codecommit: {
     RepositoryName: envVars.CODE_REPOSITORY_NAME,
     PathFilters: envVars.CODE_PATH_FILTERS.split(',')
