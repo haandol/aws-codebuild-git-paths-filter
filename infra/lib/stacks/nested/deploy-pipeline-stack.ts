@@ -145,7 +145,7 @@ export class DeployPipeline extends NestedStack {
         if [ "$STOP_PIPELINE" = "true" ]; then
           echo "your commit did not match any filters, stopping build..."
           PIPELINE_NAME=$CODEBUILD_INITIATOR#codepipeline/
-          PIPELINE_EXECUTION_ID=$(aws codepipeline get-pipeline-state --name $PIPELINE_NAME --query stageStates[?actionStates[?latestExecution.externalExecutionId==$CODEBUILD_BUILD_ID]].latestExecution.pipelineExecutionId --output text)
+          PIPELINE_EXECUTION_ID=$(aws codepipeline get-pipeline-state --name $PIPELINE_NAME --query 'stageStates[?actionStates[?latestExecution.externalExecutionId==$CODEBUILD_BUILD_ID]].latestExecution.pipelineExecutionId' --output text)
           echo "stopping pipeline execution $PIPELINE_EXECUTION_ID on pipeline $PIPELINE_NAME"
           aws codepipeline stop-pipeline-execution --pipeline-name $PIPELINE_NAME --pipeline-execution-id $PIPELINE_EXECUTION_ID
         fi
