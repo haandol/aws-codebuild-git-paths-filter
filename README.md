@@ -69,11 +69,13 @@ visit codepipeline AWS console and check the pipeline is running after commit so
 below text will be printed on codebuild console if your commit is well filtered.
 
 ```bash
+...
 your commit went through all filters!!!
 ```
 
 or codebuild will stop with below error message if your commit does not have nothing to do with the filter folders.
 
 ```bash
+...
 your commit did not match any filters, stopping build...
 ```
