@@ -2,7 +2,7 @@
 
 echo "your commit did not match any filters, stopping build..."
 
-PIPELINE_NAME=`echo $CODEBUILD_BUILD_ID | cut -d '/' -f 2`
+PIPELINE_NAME=`echo $CODEBUILD_BUILD_ID | cut -d '/' -f 2 | cut -d ':' -f 1`
 echo "pipeline name $PIPELINE_NAME"
 
 PIPELINE_QUERY="stageStates[?actionStates[?latestExecution.externalExecutionId==$CODEBUILD_BUILD_ID]].latestExecution.pipelineExecutionId"

@@ -141,7 +141,7 @@ export class DeployPipeline extends NestedStack {
         (path: string) =>
           `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_PIPELINE="false"`
       ),
-      'if [ "$STOP_PIPELINE" = "true" ]; then ./stop-pipeline.sh fi',
+      'if [ "$STOP_PIPELINE" = "true" ]; then ./scripts/stop-pipeline.sh; fi',
     ];
     const postBuildCommands = [
       'echo "your commit went through all filters!!!"',
