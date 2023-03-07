@@ -54,7 +54,7 @@ export class DeployPipeline extends NestedStack {
     );
 
     // build stage
-    const project = this.newBuildProject(props);
+    const project = this.newBuildProject(pipeline, props);
     const buildOutput = codepipeline.Artifact.artifact('build');
     const buildStage = pipeline.addStage({ stageName: 'Build' });
     buildStage.addAction(
@@ -84,6 +84,9 @@ export class DeployPipeline extends NestedStack {
           's3:CopyObject',
           's3:PutObject',
           'kms:Decrypt',
+          // Codepipeline
+          'codepipeline:StopPipelineExecution',
+          'codepipeline:GetPipelineState',
         ],
         resources: ['*'],
         effect: iam.Effect.ALLOW,
@@ -128,7 +131,7 @@ export class DeployPipeline extends NestedStack {
     return role;
   }
 
-  private newBuildProject(props: IProps) {
+  private newBuildProject(pipeline: codepipeline.IPipeline, props: IProps) {
     const role = this.createBuildRole();
 
     const preBuildCommands = [
@@ -148,6 +151,12 @@ export class DeployPipeline extends NestedStack {
     ];
 
     const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
+      environmentVariables: {
+        PIPELINE_NAME: {
+          type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
+          value: pipeline.pipelineName,
+        },
+      },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
