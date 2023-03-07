@@ -90,8 +90,6 @@ export class DeployPipeline extends NestedStack {
           's3:CopyObject',
           's3:PutObject',
           'kms:Decrypt',
-          // codebuild
-          'codebuild:StopBuild',
         ],
         resources: ['*'],
         effect: iam.Effect.ALLOW,
@@ -118,11 +116,21 @@ export class DeployPipeline extends NestedStack {
           // codebuild
           'codebuild:BatchGetBuilds',
           'codebuild:StartBuild',
-          'codebuild:StopBuild',
         ],
         resources: ['*'],
       })
     );
+    // stop pipeline execution, you can stop codebuild job instead but it will show as failed in pipeline perspective
+    role.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'codepipeline:StopPipelineExecution',
+          'codepipeline:GetPipelineState',
+        ],
+        resources: ['*'],
+      })
+    );
+
     return role;
   }
 
@@ -134,15 +142,18 @@ export class DeployPipeline extends NestedStack {
       'echo "build_id[$CODEBUILD_BUILD_ID]"',
     ];
     const buildCommands = [
-      'STOP_BUILD="true"',
+      'STOP_PIPELINE="true"',
       ...props.pathFilters.map(
         (path: string) =>
-          `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_BUILD="false"`
+          `git diff --quiet $CODEBUILD_RESOLVED_SOURCE_VERSION~1 $CODEBUILD_RESOLVED_SOURCE_VERSION -- ${path} || STOP_PIPELINE="false"`
       ),
       `
-        if [ "$STOP_BUILD" = "true" ]; then
+        if [ "$STOP_PIPELINE" = "true" ]; then
           echo "your commit did not match any filters, stopping build..."
-          aws codebuild stop-build --id $CODEBUILD_BUILD_ID
+          PIPELINE_NAME=$CODEBUILD_INITIATOR#codepipeline/
+          PIPELINE_EXECUTION_ID=$(aws codepipeline get-pipeline-state --name $PIPELINE_NAME --query stageStates[?actionStates[?latestExecution.externalExecutionId==$CODEBUILD_BUILD_ID]].latestExecution.pipelineExecutionId --output text)
+          echo "stopping pipeline execution $PIPELINE_EXECUTION_ID on pipeline $PIPELINE_NAME"
+          aws codepipeline stop-pipeline-execution --pipeline-name $PIPELINE_NAME --pipeline-execution-id $PIPELINE_EXECUTION_ID
         fi
       `.trim(),
     ];
