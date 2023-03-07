@@ -54,7 +54,7 @@ export class DeployPipeline extends NestedStack {
     );
 
     // build stage
-    const project = this.newBuildProject(pipeline, props);
+    const project = this.newBuildProject(props);
     const buildOutput = codepipeline.Artifact.artifact('build');
     const buildStage = pipeline.addStage({ stageName: 'Build' });
     buildStage.addAction(
@@ -131,12 +131,13 @@ export class DeployPipeline extends NestedStack {
     return role;
   }
 
-  private newBuildProject(pipeline: codepipeline.IPipeline, props: IProps) {
+  private newBuildProject(props: IProps) {
     const role = this.createBuildRole();
 
     const preBuildCommands = [
       'echo "ref[$CODEBUILD_RESOLVED_SOURCE_VERSION]"',
       'echo "build_id[$CODEBUILD_BUILD_ID]"',
+      'echo "pipeline_name[$PIPELINE_NAME]"',
     ];
     const buildCommands = [
       'STOP_PIPELINE=true',
@@ -151,12 +152,6 @@ export class DeployPipeline extends NestedStack {
     ];
 
     const buildProject = new codebuild.PipelineProject(this, 'BuildProject', {
-      environmentVariables: {
-        PIPELINE_NAME: {
-          type: codebuild.BuildEnvironmentVariableType.PLAINTEXT,
-          value: pipeline.pipelineName,
-        },
-      },
       buildSpec: codebuild.BuildSpec.fromObject({
         version: '0.2',
         phases: {
